@@ -104,7 +104,7 @@ void testdrawbitmap(const uint8_t *bitmap, uint8_t w, uint8_t h) {
       display.drawBitmap(icons[f][XPOS], icons[f][YPOS], logo16_glcd_bmp, w, h, WHITE);
     }
     display.display();
-    usleep(200000);
+    usleep(100000);
     
     // then erase it + move it
     for (uint8_t f=0; f< NUMFLAKES; f++) {
@@ -424,18 +424,6 @@ int main(int argc, char **argv)
   sleep(2);
   display.clearDisplay();   // clears the screen and buffer
 
-	// text display tests
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0,0);
-  display.print("Hello, world!\n");
-  display.setTextColor(BLACK, WHITE); // 'inverted' text
-  display.printf("%f\n", 3.141592);
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
-  display.printf("0x%8X\n", 0xDEADBEEF);
-  display.display();
-  sleep(5); 
 
   // draw a single pixel
   display.drawPixel(10, 10, WHITE);
@@ -494,6 +482,19 @@ int main(int argc, char **argv)
   display.display();
   sleep(2);
   display.clearDisplay();
+
+	// text display tests
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+  display.print("Hello, world!\n");
+  display.setTextColor(BLACK, WHITE); // 'inverted' text
+  display.printf("%f\n", 3.141592);
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.printf("0x%8X\n", 0xDEADBEEF);
+  display.display();
+  sleep(2); 
 
   // draw scrolling text
   testscrolltext();
