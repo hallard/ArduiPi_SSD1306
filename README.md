@@ -1,4 +1,4 @@
-Arduipi SSD1306 OLED Library Driver
+ArduiPi SSD1306 OLED Library Driver
 ===================================
 
 This is the port of the Adafruit_SSD1306 Arduino OLED driver to the Raspberry Pi
