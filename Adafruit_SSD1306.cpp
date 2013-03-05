@@ -143,7 +143,7 @@ Adafruit_SSD1306::Adafruit_SSD1306() {
 }
 
 // initializer for SPI - we indicate the pins used and LCD size
-boolean Adafruit_SSD1306::init(int8_t DC, int8_t RST, int8_t CS, int8_t SSD1306_LCDWIDTH, int8_t SSD1306_LCDHEIGHT) {
+boolean Adafruit_SSD1306::init(int8_t DC, int8_t RST, int8_t CS, int16_t SSD1306_LCDWIDTH, int16_t SSD1306_LCDHEIGHT) {
   rst = RST;
   dc = DC;	// Data / command Pin
 	cs = CS ;	// Raspberry SPI chip Enable (may be CE0 or CE1)
@@ -159,8 +159,10 @@ boolean Adafruit_SSD1306::init(int8_t DC, int8_t RST, int8_t CS, int8_t SSD1306_
 	// Init Raspberry PI SPI
 	bcm2835_spi_begin();
 	bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);      
-	bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                   
-	bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_64); 
+	bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                
+	
+	// 16 MHz SPI bus, but Worked at 62 MHz also	
+	bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_16); 
 	bcm2835_spi_chipSelect(cs);                      
   bcm2835_spi_setChipSelectPolarity(cs, LOW);     
 	
@@ -168,7 +170,7 @@ boolean Adafruit_SSD1306::init(int8_t DC, int8_t RST, int8_t CS, int8_t SSD1306_
 }
 
 // initializer for I2C - we only indicate the reset pin and LCD size !
-boolean Adafruit_SSD1306::init(int8_t RST,int8_t SSD1306_LCDWIDTH, int8_t SSD1306_LCDHEIGHT) {
+boolean Adafruit_SSD1306::init(int8_t RST,int16_t SSD1306_LCDWIDTH, int16_t SSD1306_LCDHEIGHT) {
   dc = cs = -1;
   rst = RST;
 	ssd1306_lcdwidth = SSD1306_LCDWIDTH;

@@ -90,8 +90,8 @@ class Adafruit_SSD1306 : public Adafruit_GFX {
 
   Adafruit_SSD1306();
 
-  boolean init(int8_t DC, int8_t RST, int8_t CS, int8_t SSD1306_LCDWIDTH, int8_t SSD1306_LCDHEIGHT);
-  boolean init(int8_t RST,int8_t SSD1306_LCDWIDTH, int8_t SSD1306_LCDHEIGHT);
+  boolean init(int8_t DC, int8_t RST, int8_t CS, int16_t SSD1306_LCDWIDTH, int16_t SSD1306_LCDHEIGHT);
+  boolean init(int8_t RST,int16_t SSD1306_LCDWIDTH, int16_t SSD1306_LCDHEIGHT);
   void close(void);
 
   void begin(uint8_t switchvcc = SSD1306_SWITCHCAPVCC, uint8_t i2caddr = SSD1306_I2C_ADDRESS);
@@ -116,7 +116,7 @@ class Adafruit_SSD1306 : public Adafruit_GFX {
 
  private:
   int8_t _i2caddr, dc, rst, cs;
-	int8_t ssd1306_lcdwidth, ssd1306_lcdheight;
+	int16_t ssd1306_lcdwidth, ssd1306_lcdheight;
   void fastSPIwrite(uint8_t c);
   void slowSPIwrite(uint8_t c);
 
