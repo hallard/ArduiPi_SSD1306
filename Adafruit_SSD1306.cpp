@@ -25,9 +25,9 @@ All text above, and the splash screen below must be included in any redistributi
 
 
 
-#include "ArduiPi_SSD1306.h"
-#include "Adafruit_GFX.h"
-#include "Adafruit_SSD1306.h"
+#include "./ArduiPi_SSD1306.h"
+#include "./Adafruit_GFX.h"
+#include "./Adafruit_SSD1306.h"
 
 //#include "glcdfont.c"
 
@@ -157,14 +157,12 @@ boolean Adafruit_SSD1306::init(int8_t DC, int8_t RST, int8_t CS, int16_t SSD1306
     return false;
 
 	// Init Raspberry PI SPI
-	bcm2835_spi_begin();
+	bcm2835_spi_begin(cs);
 	bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);      
 	bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                
 	
 	// 16 MHz SPI bus, but Worked at 62 MHz also	
 	bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_16); 
-	bcm2835_spi_chipSelect(cs);                      
-  bcm2835_spi_setChipSelectPolarity(cs, LOW);     
 	
 	return ( true);
 }

@@ -9,59 +9,56 @@
 #
 # *********************************************************************
 
-
-SHELL=/bin/sh
-CFLAGS=-Wall -O2 -fno-rtti
-CC=g++
-
-# Libs needed
-# you need to install bcm2835 library
-# from http://www.open.com.au/mikem/bcm2835/
-ALL_LIBS=-lbcm2835 -lssd1306
-
-# As bcm2835 library is used into ssd1306 lib we need this options
-LIBS=-Wl,--start-group $(ALL_LIBS) -Wl,--end-group
-
 # Where you want it installed when you do 'make install'
 PREFIX=/usr/local
 
-all: Adafruit_SSD1306.o\
-		Adafruit_GFX.o \
-		libssd1306.a \
-		ssd1306_demo
+# Library parameters
+# where to put the lib
+LIBDIR=$(PREFIX)/lib
+# lib name 
+LIB=libssd1306
+# shared library name
+LIBNAME=$(LIB).so.1.0
 
-# ===== Compile Library
-# Adafruit SSD1306 code 
-Adafruit_SSD1306.o:Adafruit_SSD1306.cpp 
-	$(CC) $(CFLAGS) -fPIC -c $^ -o $@ 
-# Adafruit GFX Code 
-Adafruit_GFX.o:Adafruit_GFX.cpp 
-	$(CC) $(CFLAGS) -fPIC -c $^ -o $@ 
+# The recommended compiler flags for the Raspberry Pi
+CCFLAGS=-Ofast -mfpu=vfp -mfloat-abi=hard -march=armv6zk -mtune=arm1176jzf-s
 
-# ===== Link library
-# library file for OLED
-libssd1306.a:Adafruit_SSD1306.o Adafruit_GFX.o 
-	ar rcs $@ $^  
-	ranlib $@
-# Install the library
-	mv -f  $@ $(PREFIX)/lib
-	chmod ugo-x $(PREFIX)/lib/$@
-	ldconfig
+# make all
+# reinstall the library after each recompilation
+all: libssd1306 install
 
-# ===== Compile final executable with the library created
-ssd1306_demo: ssd1306_demo.cpp 
-	$(CC) $(CFLAGS) $^ -o $@ $(LIBS) 
+# Make the library
+libssd1306: Adafruit_SSD1306.o Adafruit_GFX.o bcm2835.o 
+	g++ -shared -Wl,-soname,$@.so.1 ${CCFLAGS}  -o ${LIBNAME} $^
+	#ar -rcs $@.a $^
+	#ranlib $@.a 
+
+# Library parts (use -fno-rtti flag to avoid link problem)
+Adafruit_SSD1306.o: Adafruit_SSD1306.cpp
+	g++ -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
+
+Adafruit_GFX.o: Adafruit_GFX.cpp
+	g++ -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
+
+bcm2835.o: bcm2835.c
+	gcc -Wall -fPIC ${CCFLAGS} -c $^
+
+# Install the library to LIBPATH
+install: 
+	@echo "[Install]"
+	@if ( test ! -d $(PREFIX)/lib ) ; then mkdir -p $(PREFIX)/lib ; fi
+	#@install -m 0755 ${LIB}.a ${LIBDIR}
+	@install -m 0755 ${LIBNAME} ${LIBDIR}
+	@ln -sf ${LIBDIR}/${LIBNAME} ${LIBDIR}/${LIB}.so.1
+	@ln -sf ${LIBDIR}/${LIBNAME} ${LIBDIR}/${LIB}.so
+	@ldconfig
+
+	# if you need it
+	#cp -f  *.h $(PREFIX)/include
+	#chmod ugo-x $(PREFIX)/include/*.h
 	
-# ===== Install
-install: ssd1306_demo
-	if ( test ! -d $(PREFIX)/bin ) ; then mkdir -p $(PREFIX)/bin ; fi
-	if ( test ! -d $(PREFIX)/bin/arduipi ) ; then mkdir -p $(PREFIX)/bin/arduipi ; fi
-	cp -f  *.h $(PREFIX)/include
-	chmod ugo-x $(PREFIX)/include/*.h
-
-clean: 
-	rm -f *.o *.a ssd1306_demo
-
-
+# clear build files
+clean:
+	rm -rf *.o ${LIB}.*
 
 

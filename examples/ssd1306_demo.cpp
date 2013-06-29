@@ -278,8 +278,8 @@ void usage( char * name)
 {
 	printf("%s\n", name );
 	printf("Usage is: %s --i2c|spi --witdh --height [options]\n", name);
-	printf("  --<i>2c    :  OLED is SPI\n");
-	printf("  --<s>pi    :  OLED is I2C\n");
+	printf("  --<i>2c    :  OLED is i2c\n");
+	printf("  --<s>pi    :  OLED is SPI\n");
 	printf("  --<width>  :  OLED width\n");
 	printf("  --heigh<t> :  OLED height\n");
 	printf("Options are:\n");

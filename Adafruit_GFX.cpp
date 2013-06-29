@@ -20,9 +20,9 @@
 
  ******************************************************************/
 
-#include "ArduiPi_SSD1306.h"
-#include "Adafruit_GFX.h"
-#include "glcdfont.c"
+#include "./ArduiPi_SSD1306.h"
+#include "./Adafruit_GFX.h"
+#include "./glcdfont.c"
 
 void Adafruit_GFX::constructor(int16_t w, int16_t h) {
   _width = WIDTH = w;
