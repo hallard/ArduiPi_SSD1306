@@ -96,6 +96,8 @@ class Adafruit_SSD1306 : public Adafruit_GFX {
 
   void begin(uint8_t switchvcc = SSD1306_SWITCHCAPVCC, uint8_t i2caddr = SSD1306_I2C_ADDRESS);
   void ssd1306_command(uint8_t c);
+  void ssd1306_command(uint8_t c0, uint8_t c1);
+  void ssd1306_command(uint8_t c0, uint8_t c1, uint8_t c2);
   void ssd1306_data(uint8_t c);
 
   void clearDisplay(void);
@@ -118,6 +120,7 @@ class Adafruit_SSD1306 : public Adafruit_GFX {
   int8_t _i2caddr, dc, rst, cs;
 	int16_t ssd1306_lcdwidth, ssd1306_lcdheight;
   void fastSPIwrite(uint8_t c);
+  void fastSPIwrite(char* tbuf, uint32_t len);
   void slowSPIwrite(uint8_t c);
 
   volatile uint8_t *dcport;
