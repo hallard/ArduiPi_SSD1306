@@ -181,7 +181,8 @@ boolean Adafruit_SSD1306::init(int8_t RST,int16_t SSD1306_LCDWIDTH, int16_t SSD1
     return false;
 
 	// Init Raspberry PI I2C
-	bcm2835_i2c_begin();
+	if (bcm2835_i2c_begin()==0)
+		return false;
 
 	return ( true);
 }
@@ -228,8 +229,10 @@ void Adafruit_SSD1306::begin(uint8_t vccstate, uint8_t i2caddr) {
 		bcm2835_i2c_setSlaveAddress(i2caddr) ;
 		
 		// Set clock to 400 KHz
-		bcm2835_i2c_setClockDivider(BCM2835_I2C_CLOCK_DIVIDER_626);
+		// does not seem to work, will check this later
+		// bcm2835_i2c_set_baudrate(400000);
   }
+
 
   // Setup reset pin direction (used by both SPI and I2C)  
   bcm2835_gpio_fsel(rst, BCM2835_GPIO_FSEL_OUTP);
@@ -246,43 +249,72 @@ void Adafruit_SSD1306::begin(uint8_t vccstate, uint8_t i2caddr) {
   
 	// bring out of reset
   bcm2835_gpio_write(rst, HIGH);
-	
-	 // turn on VCC (9V?)
 
-	 
-  // Init sequence for OLED module
-  ssd1306_command(SSD1306_DISPLAYOFF);                    // 0xAE
-  ssd1306_command(SSD1306_SETDISPLAYCLOCKDIV);            // 0xD5
-  ssd1306_command(0x80);                                  // the suggested ratio 0x80
-  ssd1306_command(SSD1306_SETMULTIPLEX);                  // 0xA8
+	// SPI oled does not seem to work with spi multiple byte command, I need to check that later
+	if (isSPI())
+	{
+		// Init sequence for OLED module
+		ssd1306_command(SSD1306_DISPLAYOFF);                    // 0xAE
+		ssd1306_command(SSD1306_SETDISPLAYCLOCKDIV);            // 0xD5
+		ssd1306_command(0x80);                                  // the suggested ratio 0x80
+		ssd1306_command(SSD1306_SETMULTIPLEX);                  // 0xA8
 
-  ssd1306_command(ssd1306_lcdheight==32?0x1F:0x3F);
+		ssd1306_command(ssd1306_lcdheight==32?0x1F:0x3F);
 
-	ssd1306_command(SSD1306_SETDISPLAYOFFSET);              // 0xD3
-	ssd1306_command(0x0);                                   // no offset
-	ssd1306_command(SSD1306_SETSTARTLINE | 0x0);            // line #0
-	ssd1306_command(SSD1306_CHARGEPUMP);                    // 0x8D
-	ssd1306_command(vccstate==SSD1306_EXTERNALVCC?0x10:0x14);
-	ssd1306_command(SSD1306_MEMORYMODE);                    // 0x20
-	ssd1306_command(0x00);                                  // 0x0 act like ks0108
-	ssd1306_command(SSD1306_SEGREMAP | 0x1);
-	ssd1306_command(SSD1306_COMSCANDEC);
-	ssd1306_command(SSD1306_SETCOMPINS);                    // 0xDA
-  ssd1306_command(ssd1306_lcdheight==32?0x02:0x12);
-	ssd1306_command(SSD1306_SETCONTRAST);                   // 0x81
-	
-  if (ssd1306_lcdheight == 32) 
-    ssd1306_command(0x8F);
+		ssd1306_command(SSD1306_SETDISPLAYOFFSET);              // 0xD3
+		ssd1306_command(0x0);                                   // no offset
+		ssd1306_command(SSD1306_SETSTARTLINE | 0x0);            // line #0
+		ssd1306_command(SSD1306_CHARGEPUMP);                    // 0x8D
+		ssd1306_command(vccstate==SSD1306_EXTERNALVCC?0x10:0x14);
+		ssd1306_command(SSD1306_MEMORYMODE);                    // 0x20
+		ssd1306_command(0x00);                                  // 0x0 act like ks0108
+		ssd1306_command(SSD1306_SEGREMAP | 0x1);
+		ssd1306_command(SSD1306_COMSCANDEC);
+		ssd1306_command(SSD1306_SETCOMPINS);                    // 0xDA
+		ssd1306_command(ssd1306_lcdheight==32?0x02:0x12);
+		ssd1306_command(SSD1306_SETCONTRAST);                   // 0x81
+
+		if (ssd1306_lcdheight == 32) 
+			ssd1306_command(0x8F);
+		else
+			ssd1306_command(vccstate==SSD1306_EXTERNALVCC?0x9F:0xCF);
+
+		ssd1306_command(SSD1306_SETPRECHARGE);                  // 0xd9
+		ssd1306_command(vccstate==SSD1306_EXTERNALVCC?0x22:0xF1);
+		ssd1306_command(SSD1306_SETVCOMDETECT);                 // 0xDB
+		ssd1306_command(0x40);
+		ssd1306_command(SSD1306_DISPLAYALLON_RESUME);           // 0xA4
+		ssd1306_command(SSD1306_NORMALDISPLAY);         // 0xA6
+		ssd1306_command(SSD1306_DISPLAYON);		
+	}
 	else
-    ssd1306_command(vccstate==SSD1306_EXTERNALVCC?0x9F:0xCF);
+	{
+		ssd1306_command(SSD1306_DISPLAYOFF);                    // 0xAE
+		ssd1306_command(SSD1306_SETDISPLAYCLOCKDIV, 0x80);      // 0xD5 + the suggested ratio 0x80
+		ssd1306_command(SSD1306_SETMULTIPLEX, ssd1306_lcdheight==32?0x1F:0x3F); // 0xA8 +
+		ssd1306_command(SSD1306_SETDISPLAYOFFSET, 0x00);        // 0xD3 + no offset
+		ssd1306_command(SSD1306_SETSTARTLINE | 0x0);            // line #0
+		ssd1306_command(SSD1306_CHARGEPUMP, vccstate==SSD1306_EXTERNALVCC?0x10:0x14); // 0x8D 
+		ssd1306_command(SSD1306_MEMORYMODE, 0x00);              // 0x20 0x0 act like ks0108
+		ssd1306_command(SSD1306_SEGREMAP | 0x1);
+		ssd1306_command(SSD1306_COMSCANDEC);
+		ssd1306_command(SSD1306_SETCOMPINS, ssd1306_lcdheight==32?0x02:0x12);  // 0xDA
+		
+		if (ssd1306_lcdheight == 32) 
+			ssd1306_command(SSD1306_SETCONTRAST, 0x8F);
+		else
+			ssd1306_command(SSD1306_SETCONTRAST, vccstate==SSD1306_EXTERNALVCC?0x9F:0xCF);
 
-  ssd1306_command(SSD1306_SETPRECHARGE);                  // 0xd9
-  ssd1306_command(vccstate==SSD1306_EXTERNALVCC?0x22:0xF1);
-  ssd1306_command(SSD1306_SETVCOMDETECT);                 // 0xDB
-  ssd1306_command(0x40);
-  ssd1306_command(SSD1306_DISPLAYALLON_RESUME);           // 0xA4
-  ssd1306_command(SSD1306_NORMALDISPLAY);         // 0xA6
-  ssd1306_command(SSD1306_DISPLAYON);							//--turn on oled panel
+		ssd1306_command(SSD1306_SETPRECHARGE, vccstate==SSD1306_EXTERNALVCC?0x22:0xF1); // 0xd9
+		ssd1306_command(SSD1306_SETVCOMDETECT, 0x40);  // 0xDB
+		ssd1306_command(SSD1306_DISPLAYALLON_RESUME);    // 0xA4
+		ssd1306_command(SSD1306_NORMALDISPLAY);         // 0xA6
+		ssd1306_command(0x21, 0x00, 0x7F); // Set column address; start 0, end 127
+		ssd1306_command(0x22, 0x00, 0x03); // Set row address; start 0, end 3
+		stopscroll();
+		ssd1306_command(SSD1306_DISPLAYON);							//--turn on oled panel
+	}
+	
 }
 
 
@@ -309,13 +341,62 @@ void Adafruit_SSD1306::ssd1306_command(uint8_t c) {
   {
 	  // I2C
 		char buff[2] ;
-    uint8_t control = 0x00;   // Co = 0, D/C = 0
 		
-		buff[0] = control;
+		buff[0] = 0x00 ; // Co = 0, D/C = 0
 		buff[1] = c;
 		bcm2835_i2c_write(buff, sizeof(buff))	;
   }
 }
+
+void Adafruit_SSD1306::ssd1306_command(uint8_t c0, uint8_t c1) 
+{ 
+	char buff[3] ;
+	buff[1] = c0;
+	buff[2] = c1;
+
+	// Is SPI
+  if (isSPI())
+  {
+		// Setup D/C line to low
+	  bcm2835_gpio_write(dc, LOW);
+
+		// Write Data
+    fastSPIwrite(&buff[1], 2);
+  }
+  else
+  {
+	  // I2C
+		buff[0] = 0x00 ; // Co = 0, D/C = 0
+		bcm2835_i2c_write(buff, 3)	;
+  }
+}
+
+void Adafruit_SSD1306::ssd1306_command(uint8_t c0, uint8_t c1, uint8_t c2) 
+{ 
+	char buff[4] ;
+		
+	buff[1] = c0;
+	buff[2] = c1;
+	buff[3] = c2;
+
+	// Is SPI
+  if (isSPI())
+  {
+    // SPI
+		// Setup D/C line to low
+	  bcm2835_gpio_write(dc, LOW);
+
+		// Write Data
+    fastSPIwrite(&buff[1], 3);
+  }
+  else
+  {
+	  // I2C
+		buff[0] = 0x00;   // Co = 0, D/C = 0;
+		bcm2835_i2c_write(buff, sizeof(buff))	;
+  }
+}
+
 
 // startscrollright
 // Activate a right handed scroll for rows start through stop
@@ -409,10 +490,13 @@ void Adafruit_SSD1306::ssd1306_data(uint8_t c) {
   }
 }
 
-void Adafruit_SSD1306::display(void) {
-  ssd1306_command(SSD1306_SETLOWCOLUMN | 0x0);  // low col = 0
-  ssd1306_command(SSD1306_SETHIGHCOLUMN | 0x0);  // hi col = 0
-  ssd1306_command(SSD1306_SETSTARTLINE | 0x0); // line #0
+void Adafruit_SSD1306::display(void) 
+{
+  ssd1306_command(SSD1306_SETLOWCOLUMN  | 0x0); // low col = 0
+  ssd1306_command(SSD1306_SETHIGHCOLUMN | 0x0); // hi col = 0
+  ssd1306_command(SSD1306_SETSTARTLINE  | 0x0); // line #0
+
+	uint16_t i=0 ;
 
 	// SPI
   if ( isSPI())
@@ -420,7 +504,7 @@ void Adafruit_SSD1306::display(void) {
     // set D/C line to High
 	  bcm2835_gpio_write(dc, HIGH);
 
-    for (uint16_t i=0; i<(ssd1306_lcdwidth*ssd1306_lcdheight/8); i++) 
+    for ( i=0; i<(ssd1306_lcdwidth*ssd1306_lcdheight/8); i++) 
 		{
       fastSPIwrite(buffer[i]);
     }
@@ -434,45 +518,23 @@ void Adafruit_SSD1306::display(void) {
       }
     }
   }
+  // I2C
   else
   {
-		char buff[1] ;
+		char buff[17] ;
+		uint8_t x ;
 
-    // I2C
-    for (uint16_t i=0; i<(ssd1306_lcdwidth*ssd1306_lcdheight/8); i++) 
+		/// loop trought all buffer
+    for ( i=0; i<(ssd1306_lcdwidth*ssd1306_lcdheight/8); i++ ) 
 		{
-			buff[0] = 0x40;
-			bcm2835_i2c_write	( buff, sizeof(buff))	;
+			buff[0] = 0x40;  // Co = 0; D/C# = 1 for data
+			
+      // send a bunch of 16 data byte in one xmission
+      for (x=0; x<16; x++) 
+				buff[x+1] = buffer[i++];
 
-      // send a bunch of data in one xmission
-			// may be a bcm2835_i2c_write	(	buffer, 16); 
-			// could work, I do not have LCD to test
-      for (uint8_t x=0; x<16; x++) 
-			{
-				//Wire.write(buffer[i]);
-				buff[0] = buffer[i];
-				bcm2835_i2c_write	(	buff,  sizeof(buff));
-				i++;
-      }
-      i--;
-    }
-    // i wonder why we have to do this (check datasheet)
-    if (ssd1306_lcdheight == 32)
-		{
-      for (uint16_t i=0; i<(ssd1306_lcdwidth*ssd1306_lcdheight/8); i++)
-			{
-				// send a bunch of data in one xmission
-				buff[0] = 0x40;
-				bcm2835_i2c_write	( buff, sizeof(buff))	;
-
-				buff[0] = 0x00;
-				for (uint8_t x=0; x<16; x++) 
-				{
-					bcm2835_i2c_write	(	buff, sizeof(buff))	;
-					i++;
-				}
-				i--;
-      }
+			bcm2835_i2c_write	(	buff,  sizeof(buff));
+			i--;
     }
   }
 }
@@ -488,4 +550,8 @@ inline void Adafruit_SSD1306::fastSPIwrite(uint8_t d) {
 	bcm2835_spi_transfer(d);
 }
 
+inline void Adafruit_SSD1306::fastSPIwrite(char* tbuf, uint32_t len) {
+
+	bcm2835_spi_writenb(tbuf, len);
+}
 

@@ -28,7 +28,7 @@
 #define OLED_SPI_CS0   BCM2835_SPI_CS0 	 /* Chip Select CE0 */
 #define OLED_SPI_CS1   BCM2835_SPI_CS1 	 /* Chip Select CE1 */
 #define OLED_SPI_CS    BCM2835_SPI_CS1 	 /* Default Chip Select */
-#define OLED_I2C_RESET 4	
+#define OLED_I2C_RESET RPI_V2_GPIO_P1_22 /* GPIO 25 pin 12  */
 
 // Arduino Compatible type
 typedef uint8_t boolean;
