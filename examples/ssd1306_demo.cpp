@@ -21,6 +21,7 @@ All text above, and the splash screen must be included in any redistribution
 						the command line (no more #define on compilation needed)
 						ArduiPi project documentation http://hallard.me/arduipi
 
+						
 *********************************************************************/
 
 #include "ArduiPi_SSD1306.h"
@@ -30,31 +31,22 @@ All text above, and the splash screen must be included in any redistribution
 #include <getopt.h>
 
 #define PRG_NAME        "ssd1306_demo"
-#define PRG_VERSION     "1.0"
-#define DEF_WIDTH				128 /* default OLED width  */
-#define DEF_HEIGHT			32  /* default OLED height */
+#define PRG_VERSION     "1.1"
 
 // Instantiate the display
 Adafruit_SSD1306 display;
 
-
-enum bus_e 		{  MODE_SPI, MODE_I2C };
-
 // Config Option
 struct s_opts
 {
-	int mode;
-	int width;
-	int height;
+	int oled;
 	int verbose;
 } ;
 
 // default options values
 s_opts opts = {
-	MODE_SPI,		// SPI by default
-	DEF_WIDTH,	// 128 pixels width
-	DEF_HEIGHT,	// 32 pixels height
-  false			// Not verbose
+	OLED_ADAFRUIT_SPI_128x32,	// Default oled
+  false										// Not verbose
 };
 
 #define NUMFLAKES 10
@@ -277,19 +269,19 @@ Comments:
 void usage( char * name)
 {
 	printf("%s\n", name );
-	printf("Usage is: %s --i2c|spi --witdh --height [options]\n", name);
-	printf("  --<i>2c    :  OLED is i2c\n");
-	printf("  --<s>pi    :  OLED is SPI\n");
-	printf("  --<width>  :  OLED width\n");
-	printf("  --heigh<t> :  OLED height\n");
+	printf("Usage is: %s --oled type [options]\n", name);
+	printf("  --<o>led type\nOLED type are:\n");
+	for (int i=0; i<OLED_LAST_OLED;i++)
+		printf("  %1d %s\n", i, oled_type_str[i]);
+	
 	printf("Options are:\n");
 	printf("  --<v>erbose  : speak more to user\n");
 	printf("  --<h>elp\n");
 	printf("<?> indicates the equivalent short option.\n");
 	printf("Short options are prefixed by \"-\" instead of by \"--\".\n");
 	printf("Example :\n");
-	printf( "%s -s -w 128 -t 32 use a SPI 128x32 OLED\n\n", name);
-	printf( "%s -i -w 128 -t 64 use a I2C 128x64 OLED\n", name);
+	printf( "%s -o 1 use a %s OLED\n\n", name, oled_type_str[1]);
+	printf( "%s -o 4 -v use a %s OLED being verbose\n", name, oled_type_str[4]);
 }
 
 
@@ -304,11 +296,8 @@ void parse_args(int argc, char *argv[])
 {
 	static struct option longOptions[] =
 	{
-		{"i2c"		, no_argument,	  	0, 'i'},
-		{"spi"		, no_argument,	  	0, 's'},
+		{"oled"	  , required_argument,0, 'o'},
 		{"verbose", no_argument,	  	0, 'v'},
-		{"width"	, required_argument,0, 'w'},
-		{"height"	, required_argument,0, 't'},
 		{"help"		, no_argument, 			0, 'h'},
 		{0, 0, 0, 0}
 	};
@@ -321,7 +310,7 @@ void parse_args(int argc, char *argv[])
 		/* no default error messages printed. */
 		opterr = 0;
 
-    c = getopt_long(argc, argv, "isvhw:t:", longOptions, &optionIndex);
+    c = getopt_long(argc, argv, "vho:", longOptions, &optionIndex);
 
 		if (c < 0)
 			break;
@@ -329,34 +318,23 @@ void parse_args(int argc, char *argv[])
 		switch (c) 
 		{
 			case 'v': opts.verbose = true	;	break;
-			case 'i': opts.mode = MODE_I2C	;	break;
-			case 's': opts.mode = MODE_SPI ;	break;
 
-			case 'w':
-				opts.width = (int) atoi(optarg);
+			case 'o':
+				opts.oled = (int) atoi(optarg);
 				
-				if (opts.width != DEF_WIDTH )
+				if (opts.oled < 0 || opts.oled >= OLED_LAST_OLED )
 				{
-						fprintf(stderr, "--width '%d' ignored.\n", opts.width);
-						fprintf(stderr, "--width must be 128 for now\n");
-						opts.width = DEF_WIDTH;
-				}
-			break;
-
-			case 't':
-				opts.height = (int) atoi(optarg);
-				
-				if (opts.height != 32 && opts.height != 63  )
-				{
-						fprintf(stderr, "--height '%d' ignored.\n", opts.height);
-						fprintf(stderr, "--height must be 32 or 64 for now\n");
-						opts.height = DEF_HEIGHT;
+						fprintf(stderr, "--oled %d ignored must be 0 to %d.\n", opts.oled, OLED_LAST_OLED-1);
+						fprintf(stderr, "--oled set to 0 now\n");
+						opts.oled = 0;
 				}
 			break;
 
 			case 'h':
 				usage(argv[0]);
 				exit(EXIT_SUCCESS);
+			break;
+			
 			case '?':
 			default:
 				fprintf(stderr, "Unrecognized option.\n");
@@ -369,9 +347,7 @@ void parse_args(int argc, char *argv[])
 	{
 		printf("%s v%s\n", PRG_NAME, PRG_VERSION);
 		printf("-- OLED params -- \n");
-		printf("mode is    : %s\n", opts.mode == MODE_SPI ? "SPI" : "I2C");
-		printf("width is   : %d\n", opts.width);
-		printf("height is  : %d\n", opts.height);
+		printf("Oled is    : %s\n", oled_type_str[opts.oled]);
 		printf("-- Other Stuff -- \n");
 		printf("verbose is : %s\n", opts.verbose? "yes" : "no");
 		printf("\n");
@@ -388,40 +364,30 @@ Comments:
 ====================================================================== */
 int main(int argc, char **argv)
 {
+	int i;
+	
+	
+	// Oled supported display in ArduiPi_SSD1306.h
 	// Get OLED type
 	parse_args(argc, argv);
 
 	// SPI
-	if (opts.mode == MODE_SPI )
+	if (display.oled_is_spi_proto(opts.oled))
 	{
-		// SPI LCD 128x32 size, change parameters to fit to your LCD
-		if ( !display.init(OLED_SPI_DC,OLED_SPI_RESET,OLED_SPI_CS, opts.width, opts.height) )
+		// SPI change parameters to fit to your LCD
+		if ( !display.init(OLED_SPI_DC,OLED_SPI_RESET,OLED_SPI_CS, opts.oled) )
 			exit(EXIT_FAILURE);
-			
-		// SPI start : by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
-		display.begin(SSD1306_SWITCHCAPVCC);
+	}
+	else
+	{
+		// I2C change parameters to fit to your LCD
+		if ( !display.init(OLED_I2C_RESET,opts.oled) )
+			exit(EXIT_FAILURE);
 	}
 
-	// I2C
-	if (opts.mode == MODE_I2C )
-	{
-		// SPI LCD 128x32 size, change parameters to fit to your LCD
-		if ( !display.init(OLED_I2C_RESET,opts.width, opts.height) )
-			exit(EXIT_FAILURE);
-			
-		// by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
-		if (opts.height == 32 )
-			// initialize with the I2C addr 0x3C (for the 128x32)
-			display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  
-		else
-			// initialize with the I2C addr 0x3D (for the 128x64)
-			display.begin(SSD1306_SWITCHCAPVCC, 0x3D);  
-	}
-
+	display.begin();
 	
   // init done
-  display.display(); // show splashscreen
-  sleep(2);
   display.clearDisplay();   // clears the screen and buffer
 
 
@@ -496,6 +462,37 @@ int main(int argc, char **argv)
   display.display();
   sleep(2); 
 
+	
+	// horizontal bargraph tests
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+	for ( i =0 ; i<=100 ; i++)
+	{
+		display.clearDisplay();
+		display.setCursor(0,0);
+		display.print("Gauge Graph!\n");
+		display.printf("  %03d %%", i);
+		display.drawHorizontalBargraph(0,16,128,16,1, i);
+		display.display();
+		usleep(25000);
+	}
+	
+	// vertical bargraph tests
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+	for ( i =0 ; i<=100 ; i++)
+	{
+		display.clearDisplay();
+		display.setCursor(0,0);
+		display.print("Gauge !\n");
+		display.printf("%03d %%", i);
+		display.drawVerticalBargraph(114,0,8,32,1, i);
+		display.display();
+		usleep(25000);
+	}
+		
   // draw scrolling text
   testscrolltext();
   sleep(2);
