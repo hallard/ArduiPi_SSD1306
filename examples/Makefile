@@ -22,7 +22,7 @@ SOURCES = ${PROGRAMS:=.cpp}
 all: ${PROGRAMS}
 
 ${PROGRAMS}: ${SOURCES}
-	g++ ${CCFLAGS} -Wall -I../ -L../  -lssd1306 $@.cpp -o $@
+	g++ ${CCFLAGS} -Wall  -lssd1306 $@.cpp -o $@
 
 clean:
 	rm -rf $(PROGRAMS)

@@ -41,7 +41,7 @@ Comments: some code grabbed from picocom and other from teleinfo
 #define false 0
 
 #define PRG_NAME        "teleinfo-oled"
-#define PRG_VERSION     "1.0"
+#define PRG_VERSION     "1.1"
 #define PRG_DIR			"/usr/local/bin" 				// Directory where we are when in daemon mode
 
 // Define teleinfo mode, device or network
@@ -61,6 +61,10 @@ enum flowcntrl_e 	{ FC_NONE, 	FC_RTSCTS, FC_XONXOFF };
 enum mode_e 			{ MODE_NET, MODE_SERIAL };
 enum ptec_e 			{ PTEC_HP, PTEC_HC };
 
+// Oled protocol 
+enum oled_e 	{ OLED_I2C, OLED_SPI };
+
+
 // Config Option
 struct s_opts
 {
@@ -73,6 +77,9 @@ struct s_opts
 	int databits;
 	int mode;
 	char mode_str[32];
+	int address;					// i2c slave address
+	int oled;						// protocol used for OLED
+	char oled_str[8];			// protocol mode functionnality human readable
 	int netport;
 	int verbose;
   int daemon;
@@ -88,10 +95,14 @@ s_opts opts = {
 	7,
 	MODE_SERIAL,
 	"Serial",
+	0,
+	OLED_I2C,
+	"i2c",
   TELEINFO_PORT,
 	false,
   false
 };
+
 
 // ======================================================================
 // Global vars 
@@ -643,9 +654,13 @@ void usage( char * name)
 {
 
 	printf("%s\n", PRG_NAME );
-	printf("Usage is: %s --net|serial [options] <tty device>\n", PRG_NAME);
+	printf("Usage is: %s --net|serial [oled] [-a address] [options] <tty device>\n", PRG_NAME);
 	printf("  --<s>erial :  receive teleinfo frame from network\n");
 	printf("  --<n>net   :  receive teleinfo frame from serial\n");
+	printf("  --<a>ddress:  i2c device address (default 0x2A)\n");
+	printf("oled is:\n");
+	printf("  --<I>2c      : set protocol to i2c (default)\n");
+	printf("  --<S>pi      : set protocol to spi\n");
 	printf("Options are:\n");
 	printf("  --<v>erbose  : speak more to user\n");
 	printf("  --<d>aemon   : daemonize the process\n");
@@ -672,14 +687,18 @@ void parse_args(int argc, char *argv[])
 		{"verbose", no_argument,	  	0, 'v'},
 		{"net"		, no_argument,	  	0, 'n'},
 		{"serial"	, no_argument,	  	0, 's'},
-		{"port", 		required_argument,0, 'p'},
-		{"daemon", 	no_argument, 			0, 'd'},
-		{"help", 		no_argument, 			0, 'h'},
+		{"address",required_argument, 0, 'a' },
+		{"i2c"    ,no_argument		,	  0, 'I' },
+		{"spi"    ,no_argument		   ,0, 'S' },
+		{"port"   ,	required_argument,0, 'p'},
+		{"daemon" ,	no_argument, 			0, 'd'},
+		{"help"	  ,	no_argument, 			0, 'h'},
 		{0, 0, 0, 0}
 	};
 
 	int optionIndex = 0;
 	int c;
+	char * pEnd;
 
 	while (1) 
 	{
@@ -693,13 +712,12 @@ void parse_args(int argc, char *argv[])
 
 		switch (c) 
 		{
-			case 'v':
-				opts.verbose = true;
-			break;
-
-			case 'd':
-				opts.daemon = true;
-			break;
+		
+			case 'I': opts.oled= OLED_I2C; 	strcpy(opts.oled_str, "i2c")	; break;
+			case 'S': opts.oled= OLED_SPI; 	strcpy(opts.oled_str, "spi")	; break;
+			
+			case 'v':opts.verbose = true;		break;
+			case 'd':opts.daemon = true;		break;
 
 			case 'n':
 				opts.mode = MODE_NET;
@@ -710,6 +728,20 @@ void parse_args(int argc, char *argv[])
 				opts.mode = MODE_SERIAL;
 				strcpy(opts.mode_str,"Serial");
 			break;
+			
+						// i2c slave address
+			case 'a':
+				opts.address = strtol(optarg,&pEnd,0);
+				
+				if ( !*pEnd || opts.address < 1 || opts.address > 0x7F )
+				{
+						fprintf(stderr, "--address %d (0x%02x) ignored.\n", opts.address, opts.address);
+						fprintf(stderr, "--address must be between 1 and 255 or 0x01 and 0xff\n");
+						opts.address = 0;
+						fprintf(stderr, "--setting slave to default 0x%02x\n", opts.address);
+				}
+			break;
+
 
 			case 'p':
 				opts.netport = (int) atoi(optarg);
@@ -750,6 +782,19 @@ void parse_args(int argc, char *argv[])
 	{
 		printf("%s v%s\n", PRG_NAME, PRG_VERSION);
 
+		if ( opts.oled == OLED_I2C )
+		{
+			printf("-- i2c OLED -- \n");
+			printf("slave address : 0x%02X\n", opts.address);
+		}
+		
+		if ( opts.oled == OLED_SPI )
+		{
+			printf("-- Spi OLED -- \n");
+			printf("Spi CS        : CE0\n");
+		}
+
+		
 		if (opts.mode == MODE_NET )
 		{
 			printf("-- Network Stuff -- \n");
@@ -764,6 +809,7 @@ void parse_args(int argc, char *argv[])
 			printf("parity is      : %s\n", opts.parity_str);
 			printf("databits are   : %d\n", opts.databits);
 		}
+		
 		printf("-- Other Stuff -- \n");
 		printf("verbose is     : %s\n", opts.verbose? "yes" : "no");
 		printf("\n");
@@ -853,14 +899,22 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	// SPI Init
-  if ( !display.init(OLED_SPI_DC,OLED_SPI_RESET,OLED_SPI_CS, 128, 32) )
-		fatal("Unable to init SPI OLED");
-		
-	// SPI start : by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
-	display.begin(SSD1306_SWITCHCAPVCC);
+	if (opts.oled == OLED_SPI )
+	{
+		// SPI OLED Init
+		if ( !display.init(OLED_SPI_DC,OLED_SPI_RESET,OLED_SPI_CS, OLED_ADAFRUIT_SPI_128x32) )
+			fatal("Unable to init SPI OLED");
+	}
+	else
+	{
+		// I2C OLED Init
+		if ( !display.init(OLED_I2C_RESET,OLED_ADAFRUIT_I2C_128x32) )
+			fatal("Unable to init I2C OLED");
+	}
 
-	// show splashscreen
+	display.begin();
+	
+	// show 
   display.display(); 
 
  	log_syslog(stdout, "Inits succeded, entering Main loop\n");
@@ -969,7 +1023,6 @@ int main(int argc, char **argv)
 		{
 			//char oled_buff[1024];
 			int percent=0;
-			int hsize=0;
 			
 			t = time(NULL);
 			tmp = localtime(&t);
@@ -981,12 +1034,6 @@ int main(int argc, char **argv)
 				}
 			}
 
-			// Percent of total power 
-			percent = (100 * g_values.iinst) / g_values.isousc ;
-			
-			// calculate pixel size
-			hsize = 30 / (percent);
-			
 			// good full frame received, do whatever you want here
 			//fprintf(stdout, "==========================\nTeleinfo Frame of %d char\n%s\n==========================%s\n",
 			//								strlen(rcv_buff), time_str, rcv_buff );
@@ -1012,13 +1059,19 @@ int main(int argc, char **argv)
 			display.print("Creuses ");
 			display.printf("%09ld\n", g_values.hchc);
 			display.setTextColor(WHITE); // normaltext
+
+			// Calculate Bargraph display
+			
+			// Percent of total power 
+			percent = (100 * g_values.iinst) / g_values.isousc ;
 			
 			//display.setTextColor(BLACK, WHITE); // 'inverted' text
 			display.printf("%d W %d%%  %3d A\n%s", g_values.papp, percent, g_values.iinst, time_str);
 			//display.setTextSize(2);
 			//display.setTextColor(WHITE);
-			display.drawRect(114,0, 12,32, 1)	;
-			display.fillRect(115,31 - hsize, 10, hsize, 1);
+			display.drawVerticalBargraph(114,0,12,32,1, percent);
+			//display.drawRect(114,0, 12,32, 1)	;
+			//display.fillRect(115,31 - hsize, 10, hsize, 1);
 			display.display();
 			display.setTextColor(BLACK, WHITE); // 'inverted' text
 

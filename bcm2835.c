@@ -55,7 +55,7 @@ volatile uint32_t *bcm2835_st	= MAP_FAILED;
 static uint8_t debug = 0;
 
 // I2C The time needed to transmit one byte. In microseconds.
-static int i2c_byte_wait_us = 0;
+//static int i2c_byte_wait_us = 0;
 
 // i2c file descriptor for opeping i2c device
 static int i2c_fd = 0;
@@ -159,6 +159,7 @@ uint32_t bcm2835_peri_read(volatile uint32_t* paddr)
 		// if subsequent code changes to a different peripheral
 		uint32_t ret = *paddr;
 		uint32_t dummy = *paddr;
+		dummy=dummy; // avoid compiler warning
 		return ret;
 	}
 }
@@ -750,7 +751,7 @@ void bcm2835_spi_writenb(char* tbuf, uint32_t len)
 		bcm2835_spi_setChipSelect(LOW);
 
     // This is Polled transfer as per section 10.6.1
-    // BUG ALERT: what happens if we get interupted in this section, and someone else
+    // BUG ALERT: what happens if we get interrupted in this section, and someone else
     // accesses a different peripheral?
 
     // Clear TX and RX fifos

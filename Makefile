@@ -30,8 +30,6 @@ all: libssd1306 install
 # Make the library
 libssd1306: Adafruit_SSD1306.o Adafruit_GFX.o bcm2835.o 
 	g++ -shared -Wl,-soname,$@.so.1 ${CCFLAGS}  -o ${LIBNAME} $^
-	#ar -rcs $@.a $^
-	#ranlib $@.a 
 
 # Library parts (use -fno-rtti flag to avoid link problem)
 Adafruit_SSD1306.o: Adafruit_SSD1306.cpp
@@ -45,20 +43,33 @@ bcm2835.o: bcm2835.c
 
 # Install the library to LIBPATH
 install: 
-	@echo "[Install]"
+	@echo "[Install Library]"
 	@if ( test ! -d $(PREFIX)/lib ) ; then mkdir -p $(PREFIX)/lib ; fi
-	#@install -m 0755 ${LIB}.a ${LIBDIR}
 	@install -m 0755 ${LIBNAME} ${LIBDIR}
 	@ln -sf ${LIBDIR}/${LIBNAME} ${LIBDIR}/${LIB}.so.1
 	@ln -sf ${LIBDIR}/${LIBNAME} ${LIBDIR}/${LIB}.so
 	@ldconfig
+	@rm -rf ${LIB}.*
 
-	# if you need it
-	#cp -f  *.h $(PREFIX)/include
-	#chmod ugo-x $(PREFIX)/include/*.h
+	@echo "[Install Headers]"
+	@if ( test ! -d $(PREFIX)/include ) ; then mkdir -p $(PREFIX)/include ; fi
+	@cp -f  Adafruit_*.h $(PREFIX)/include
+	@cp -f  ArduiPi_*.h $(PREFIX)/include
+	@cp -f  bcm2835.h $(PREFIX)/include
+	
+	
+# Uninstall the library 
+uninstall: 
+	@echo "[Uninstall Library]"
+	@rm -f ${LIBDIR}/${LIB}.*
+
+	@echo "[Uninstall Headers]"
+	@rm -rf  $(PREFIX)/include/Adafruit_SSD1306*
+	@rm -rf  $(PREFIX)/include/ArduiPi_SSD1306*
+	@rm -rf  $(PREFIX)/include/bcm2835.h
 	
 # clear build files
 clean:
-	rm -rf *.o ${LIB}.*
+	rm -rf *.o ${LIB}.* ${LIBDIR}/${LIB}.*
 
 
