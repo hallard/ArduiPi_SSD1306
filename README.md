@@ -20,7 +20,7 @@ Everything is now documented on my blog
 http://hallard.me/adafruit-ssd1306-oled-display-driver-for-raspberry-pi/
 
 
-[1]: https://github.com/hallard/ArduiPi_SSD1306
+[1]: https://github.com/hallard/ArduiPi_OLED
 [2]: http://hallard.me/adafruit-oled-display-driver-for-pi/
 [3]: https://hallard.me
 
