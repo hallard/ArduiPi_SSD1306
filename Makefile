@@ -10,7 +10,7 @@
 # *********************************************************************
 
 # Where you want it installed when you do 'make install'
-PREFIX=/usr/local
+PREFIX=$(DESTDIR)
 
 # Library parameters
 # where to put the lib
@@ -25,37 +25,38 @@ CCFLAGS=-Ofast
 
 # make all
 # reinstall the library after each recompilation
-all: libssd1306 install
+all: libssd1306
 
 # Make the library
 libssd1306: Adafruit_SSD1306.o Adafruit_GFX.o bcm2835.o 
-	g++ -shared -Wl,-soname,$@.so.1 ${CCFLAGS}  -o ${LIBNAME} $^
+	$(CC) -shared -Wl,-soname,$@.so.1 ${CCFLAGS}  -o ${LIBNAME} $^
 
 # Library parts (use -fno-rtti flag to avoid link problem)
 Adafruit_SSD1306.o: Adafruit_SSD1306.cpp
-	g++ -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
+	$(CC) -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
 
 Adafruit_GFX.o: Adafruit_GFX.cpp
-	g++ -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
+	$(CC) -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
 
 bcm2835.o: bcm2835.c
-	gcc -Wall -fPIC ${CCFLAGS} -c $^
+	$(CC) -Wall -fPIC ${CCFLAGS} -c $^
 
 # Install the library to LIBPATH
 install: 
 	@echo "[Install Library]"
+	@echo here $(DESTDIR)
 	@if ( test ! -d $(PREFIX)/lib ) ; then mkdir -p $(PREFIX)/lib ; fi
 	@install -m 0755 ${LIBNAME} ${LIBDIR}
-	@ln -sf ${LIBDIR}/${LIBNAME} ${LIBDIR}/${LIB}.so.1
-	@ln -sf ${LIBDIR}/${LIBNAME} ${LIBDIR}/${LIB}.so
-	@ldconfig
+	@ln -sf ../${LIBDIR}/${LIBNAME} ${LIBDIR}/${LIB}.so.1
+	@ln -sf ../${LIBDIR}/${LIBNAME} ${LIBDIR}/${LIB}.so
+#	@ldconfig
 	@rm -rf ${LIB}.*
 
 	@echo "[Install Headers]"
 	@if ( test ! -d $(PREFIX)/include ) ; then mkdir -p $(PREFIX)/include ; fi
-	@cp -f  Adafruit_*.h $(PREFIX)/include
-	@cp -f  ArduiPi_*.h $(PREFIX)/include
-	@cp -f  bcm2835.h $(PREFIX)/include
+	@cp -f Adafruit_*.h $(PREFIX)/include
+	@cp -f ArduiPi_*.h $(PREFIX)/include
+	@cp -f bcm2835.h $(PREFIX)/include
 	
 	
 # Uninstall the library 
