@@ -7,6 +7,9 @@
 #							the command line (no more #define on compilation needed)
 #							ArduiPi project documentation http://hallard.me/arduipi
 #
+#       2/23/2021       Kamil Piekutowski (https://github.com/KamilPiekutowski)
+#                                                       Modified for compiling with Yocto.
+#
 # *********************************************************************
 
 # Where you want it installed when you do 'make install'
@@ -33,12 +36,10 @@ libssd1306: Adafruit_SSD1306.o Adafruit_GFX.o bcm2835.o
 
 # Library parts (use -fno-rtti flag to avoid link problem)
 Adafruit_SSD1306.o: Adafruit_SSD1306.cpp
-#       $(CC) -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
-	$(CC) -Wall ${CCFLAGS} -c $^
+	$(CC) -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
 
 Adafruit_GFX.o: Adafruit_GFX.cpp
-#	$(CC) -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
-	$(CC) -Wall ${CCFLAGS} -c $^
+	$(CC) -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
 
 bcm2835.o: bcm2835.c
 	$(CC) -Wall -fPIC ${CCFLAGS} -c $^
@@ -48,11 +49,7 @@ install:
 	@echo "[Install Library]"
 	@echo here $(DESTDIR)
 	@if ( test ! -d $(PREFIX)/lib ) ; then mkdir -p $(PREFIX)/lib ; fi
-	@install -m 0755 ${LIBNAME} ${LIBDIR}
-	@ln -sf ../${LIBDIR}/${LIBNAME} ${LIBDIR}/${LIB}.so.1
-	@ln -sf ../${LIBDIR}/${LIBNAME} ${LIBDIR}/${LIB}.so
-#	@ldconfig
-	@rm -rf ${LIB}.*
+	#@rm -rf ${LIB}.*
 
 	@echo "[Install Headers]"
 	@if ( test ! -d $(PREFIX)/include ) ; then mkdir -p $(PREFIX)/include ; fi
