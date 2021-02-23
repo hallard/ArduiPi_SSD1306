@@ -10,7 +10,7 @@
 # *********************************************************************
 
 # Where you want it installed when you do 'make install'
-PREFIX=$(DESTDIR)
+PREFIX=$(DESTDIR)/usr
 
 # Library parameters
 # where to put the lib
@@ -33,10 +33,12 @@ libssd1306: Adafruit_SSD1306.o Adafruit_GFX.o bcm2835.o
 
 # Library parts (use -fno-rtti flag to avoid link problem)
 Adafruit_SSD1306.o: Adafruit_SSD1306.cpp
-	$(CC) -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
+#       $(CC) -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
+	$(CC) -Wall ${CCFLAGS} -c $^
 
 Adafruit_GFX.o: Adafruit_GFX.cpp
-	$(CC) -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
+#	$(CC) -Wall -fPIC -fno-rtti ${CCFLAGS} -c $^
+	$(CC) -Wall ${CCFLAGS} -c $^
 
 bcm2835.o: bcm2835.c
 	$(CC) -Wall -fPIC ${CCFLAGS} -c $^
