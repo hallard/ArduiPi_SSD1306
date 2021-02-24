@@ -258,27 +258,29 @@
 #define LOW  0x0
 
 /// Speed of the core clock core_clk
-#define BCM2835_CORE_CLK_HZ				250000000	///< 250 MHz
+#define BCM2835_CORE_CLK_HZ		250000000	///< 250 MHz
 
 // Physical addresses for various peripheral register sets
 /// Base Physical Address of the BCM 2835 peripheral registers
 #define BCM2835_PERI_BASE               0x20000000
+#define BCM2835_RPI4_PERI_BASE          0xFE000000
+
 /// Base Physical Address of the System Timer registers
-#define BCM2835_ST_BASE			(BCM2835_PERI_BASE + 0x3000)
+#define BCM2835_ST_BASE                 (BCM2835_RPI4_PERI_BASE + 0x3000)
 /// Base Physical Address of the Pads registers
-#define BCM2835_GPIO_PADS               (BCM2835_PERI_BASE + 0x100000)
+#define BCM2835_GPIO_PADS               (BCM2835_RPI4_PERI_BASE + 0x100000)
 /// Base Physical Address of the Clock/timer registers
-#define BCM2835_CLOCK_BASE              (BCM2835_PERI_BASE + 0x101000)
+#define BCM2835_CLOCK_BASE              (BCM2835_RPI4_PERI_BASE + 0x101000)
 /// Base Physical Address of the GPIO registers
-#define BCM2835_GPIO_BASE               (BCM2835_PERI_BASE + 0x200000)
+#define BCM2835_GPIO_BASE               (BCM2835_RPI4_PERI_BASE + 0x200000)
 /// Base Physical Address of the SPI0 registers
-#define BCM2835_SPI0_BASE               (BCM2835_PERI_BASE + 0x204000)
+#define BCM2835_SPI0_BASE               (BCM2835_RPI4_PERI_BASE + 0x204000)
 /// Base Physical Address of the BSC0 registers
-#define BCM2835_BSC0_BASE 		(BCM2835_PERI_BASE + 0x205000)
+#define BCM2835_BSC0_BASE               (BCM2835_RPI4_PERI_BASE + 0x205000)
 /// Base Physical Address of the PWM registers
-#define BCM2835_GPIO_PWM                (BCM2835_PERI_BASE + 0x20C000)
- /// Base Physical Address of the BSC1 registers
-#define BCM2835_BSC1_BASE		(BCM2835_PERI_BASE + 0x804000)
+#define BCM2835_GPIO_PWM                (BCM2835_RPI4_PERI_BASE + 0x20C000)
+/// Base Physical Address of the BSC1 registers
+#define BCM2835_BSC1_BASE               (BCM2835_RPI4_PERI_BASE + 0x804000)
 
 
 /// Base of the ST (System Timer) registers.
